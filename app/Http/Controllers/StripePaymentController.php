@@ -181,7 +181,6 @@ class StripePaymentController extends Controller
         }
         curl_close($ch);
 
-
         return TRUE;
     }
 
@@ -205,8 +204,6 @@ class StripePaymentController extends Controller
         }
         curl_close($ch);
         
-
-        //echo '---- HERE ----';
         return TRUE;
     }
 
@@ -231,7 +228,6 @@ class StripePaymentController extends Controller
 
         $result = json_decode($result, TRUE);
 
-        echo '---> HERE <---';
         return $result['id'] ?? FALSE;
     }
 
