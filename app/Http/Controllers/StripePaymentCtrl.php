@@ -25,6 +25,7 @@ class StripePaymentCtrl extends Controller
         foreach($productData as $key=>$prod){
 			$productData[$key]['default_price'] = $this->fetchProduct($prod['name']) ?? $this->createProduct($prod['name'], 100*$prod['price']);
         }
+		//dd($productData);
 
         return view('home', compact('productData'));
     }
@@ -64,8 +65,9 @@ class StripePaymentCtrl extends Controller
         $defaultCustomerPaymentId   = $setCustomerPaymentId ? $this->setCustomerDefaultPaymentId($paymethodId, $customer_id) : NULL;
         $subscriptionId             = $this->createSubscription($customer_id, $price_id);
         
+		//dd($subscriptionId);
         Session::flash('success', 'Payment successful! <br>Subscription Id : '.$subscriptionId);
-        return back();
+        return redirect('/');
     }
 
 
@@ -102,7 +104,7 @@ class StripePaymentCtrl extends Controller
 		try{
 			$data = ["customer"=>$customer_id];
 			$result 	= $this->stripe->paymentMethods->attach($paymethodId, $data);
-			dd(145, collect($result));
+			return TRUE;
 		}
 		catch(\Exception $e){
 			Log::error($e);
@@ -111,50 +113,32 @@ class StripePaymentCtrl extends Controller
     }
 
     private function setCustomerDefaultPaymentId($paymethodId, $customer_id){
-        
-        $ch = curl_init();
-
-        curl_setopt($ch, CURLOPT_URL, 'https://api.stripe.com/v1/customers/'.$customer_id);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, "invoice_settings[default_payment_method]=".$paymethodId);
-        curl_setopt($ch, CURLOPT_USERPWD, env('STRIPE_SECRET') . ':' . '');
-        
-        $headers = array();
-        $headers[] = 'Content-Type: application/x-www-form-urlencoded';
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        
-        $result = curl_exec($ch);
-        if (curl_errno($ch)) {
-            echo 'Error:' . curl_error($ch);
-        }
-        curl_close($ch);
-        
-        return TRUE;
+        try{
+			$data = ['invoice_settings' => ['default_payment_method' => $paymethodId]];
+			$result 	= $this->stripe->customers->update($customer_id, $data);
+			return TRUE;
+		}
+		catch(\Exception $e){
+			Log::error($e);
+			return FALSE;
+		}
     }
 
     private function createSubscription($customer_id, $price_id){
-        $ch = curl_init();
-
-        curl_setopt($ch, CURLOPT_URL, 'https://api.stripe.com/v1/subscriptions');
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, "customer=".$customer_id."&items[0][price]=".$price_id);
-        curl_setopt($ch, CURLOPT_USERPWD, env('STRIPE_SECRET') . ':' . '');
-        
-        $headers = array();
-        $headers[] = 'Content-Type: application/x-www-form-urlencoded';
-        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-        
-        $result = curl_exec($ch);
-        if (curl_errno($ch)) {
-            echo 'Error:' . curl_error($ch);
-        }
-        curl_close($ch);
-
-        $result = json_decode($result, TRUE);
-
-        return $result['id'] ?? FALSE;
+		try{
+			$data = [
+					'customer' => $customer_id,
+					'items' => [
+						['price' => $price_id],
+					],
+				];
+			$result 	= $this->stripe->subscriptions->create($data);
+			return collect($result)['id'] ?? NULL;
+		}
+		catch(\Exception $e){
+			Log::error($e);
+			return FALSE;
+		}
     }
 
 }
