@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\StripePaymentController;
+use App\Http\Controllers\StripePaymentCtrl;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,9 +14,9 @@ use App\Http\Controllers\StripePaymentController;
 |
 */
 
-Route::get('/', [StripePaymentController::class, 'stripe']);
+Route::get('/', [StripePaymentCtrl::class, 'stripe']);
 
-Route::controller(StripePaymentController::class)->group(function(){
+Route::controller(StripePaymentCtrl::class)->group(function(){
     //Route::get('stripe', 'stripe');
     Route::post('stripe', 'stripePost')->name('stripe.post');
 });
